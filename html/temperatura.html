@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Impianto solare</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.4.0/chart.min.js" integrity="sha512-JxJpoAvmomz0MbIgw9mx+zZJLEvC6hIgQ6NcpFhVmbK1Uh5WynnRTTSGv3BTZMNBpPbocmdSJfldgV5lVnPtIw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<p><h3>Menù termometro</h3></p>
+<p style="font-size:60px; display:none" id="lastTemperature"></p>
+<br>
+
+<button id="prev" onclick="fetchRecords(-1)" style="display:none;">Precedente</button><p id="oldDataDay" style="display: none"></p><button id="next" onclick="fetchRecords(+1)" style="display:none">Successivo</button><br><br>
+<div id="goToDay"><button onclick="fetchRecords(2)">Vai a:</button>
+    <label>
+        <input id="newDay" name="newDay" type="text">
+    </label>
+</div>
+<br>
+<div id="chartDiv" style="min-width: 50%; min-height: 50%; display: inline-block; vertical-align: top"><canvas id="myChart"></canvas></div><br>
+<div id="tableDiv" style="display: inline-block"><table id="dayValuesTab"></table></div>
+
+
+<script type="text/javascript">
+//var. globale, contiene il giorno visualizzato sempre
+    var dayShown="";
+    var myChart = "";
+    
+    window.addEventListener('DOMContentLoaded', (event) => {
+        fetchRecords(0);
+    });
+
+
+    function fetchRecords(increment)
+    {
+    	
+    	//innanzitutto calcola la data richiesta
+        //visualizzo bottoni per scorrere tra i giorni
+        document.getElementById("prev").style.display="inline";
+        document.getElementById("next").style.display="inline";
+        var newDay;
+        if(increment===2) //il giorno è fornito tramite casella di testo
+        {
+            newDay=new Date(document.getElementById("newDay").value);
+            dayShown=newDay;
+        }
+        else {
+            //incremento o decremento il mese desiderato
+            //se non è stato scelto nessun giorno, scelgo oggi
+            
+            if(dayShown==="")
+            {
+                dayShown=new Date();
+            }
+            newDay = dayShown;
+            newDay.setDate(newDay.getDate() + increment);
+        }
+
+        //aggiunge uno zero prima del mese se necessario, per compatibilità con il database
+        var month, day;
+        if(newDay.getMonth()+1<10)
+        {
+            month="0"+(newDay.getMonth()+1);
+        }
+        else
+        {
+            month=(newDay.getMonth()+1);
+        }
+        //aggiunge 0 prima del giorno se necessario
+        if(newDay.getDate()<10)
+        {
+            day="0"+(newDay.getDate());
+        }
+        else
+        {
+            day=newDay.getDate();
+        }
+        var requestedDate=encodeURIComponent(newDay.getFullYear()+"-"+month+"-"+day);
+        var xmlhttp;
+        if (window.XMLHttpRequest) {
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function()
+        {
+            if(xmlhttp.readyState == 4 && xmlhttp.status == 200)
+            {
+		//rendo visibile l'etichetta del giorno visualizzato
+            	document.getElementById("oldDataDay").innerText=requestedDate;
+                document.getElementById("oldDataDay").style.display="inline";
+                
+            	//nessun dato presente per il giorno selezionato, nascondo tutto
+            	if(xmlhttp.responseText=="[]")
+            		{
+            		document.getElementById("chartDiv").style.display="none";
+            		document.getElementById("tableDiv").style.display="none";
+            		myChart.destroy();
+            		return;
+            		}
+            	else
+            		{
+            			//altrimenti visualizza tabella e grafico
+            			document.getElementById("chartDiv").style.display="inline-block";
+            			document.getElementById("tableDiv").style.display="inline-block";
+            		}
+                var table = document.getElementById("dayValuesTab");
+                table.innerHTML="<th>Ora</th> <th>Temperatura</th>";
+                var dailyReadings=JSON.parse(xmlhttp.responseText);
+                var lastT;
+                //per il grafico
+                var labels = [];
+                var values = [];
+                var j = 0;
+                
+                for(var i=0; i<dailyReadings.length; i++)
+                {
+                    let hour=dailyReadings[i].timestamp.split(" ")[1];
+                    let temp=dailyReadings[i].temperature;
+                    
+                    //per il grafico, salvo solo un valore ogni 60 minuti
+                    if(i%3==0)
+            		{
+            		labels[j]=hour;
+            		values[j]=temp;
+            		j++;
+            		}
+                    
+                    //aggiungo lettura alla tabella in una nuova riga
+                    let row=document.createElement("tr");
+                    row.innerHTML="<td>"+hour+"</td> <td>"+temp+" °C</td>";
+                    table.appendChild(row);
+                    lastT=temp;
+                }
+                //mostra temperatura attuale solo se giorno corrente
+               	if(increment==0)
+               	{
+               		document.getElementById("lastTemperature").innerText=lastT+" °C";
+               		document.getElementById("lastTemperature").style.display="inline";
+               	}
+               	else
+               		{
+               		document.getElementById("lastTemperature").style.display="none";
+               		}
+                
+                //render grafico
+                //prima elimino grafico precedente se presente
+               	const data = {
+               		  labels: labels,
+               		  datasets: [{
+               		    label: 'Temperature',
+               		    backgroundColor: 'rgb(255, 99, 132)',
+               		    borderColor: 'rgb(255, 99, 132)',
+               		    data: values,
+               		  }]
+               		};
+               	const config = {
+                 		  type: 'line',
+                 		  data: data,
+                 		  options: {}
+                 		};
+               	//se esiste, elimino grafico precedente
+               	if(myChart!="")
+               		myChart.destroy();
+               	
+               	myChart = new Chart(
+               		    document.getElementById('myChart'),
+               		    config
+               		  );
+            }
+        }
+
+        xmlhttp.open("GET", "/api/temperatures?day="+requestedDate);
+        xmlhttp.send();
+    }
+</script>
+</body>
+</html>

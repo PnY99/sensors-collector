@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Statistiche mensili temperatura</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.4.0/chart.min.js" integrity="sha512-JxJpoAvmomz0MbIgw9mx+zZJLEvC6hIgQ6NcpFhVmbK1Uh5WynnRTTSGv3BTZMNBpPbocmdSJfldgV5lVnPtIw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<p><h3>Statistiche mensili temperatura</h3></p>
+<br>
+
+<button id="prev" onclick="fetchRecords(-1)">Precedente</button><p id="oldDataDay" style="display: none"></p><button id="next" onclick="fetchRecords(+1)">Successivo</button><br><br>
+<div id="goToDay"><button onclick="fetchRecords(2)">Vai a:</button>
+    <label>
+        <input id="newDay" name="newDay" type="text">
+    </label>
+</div>
+<br>
+
+<p id="monthStats" style="display: inline"></p><br>
+<div id="tableDiv" style="display: inline-block; vertical-align: top"><canvas id="myChart"></canvas></div><br>
+<div id="chartDiv" style="display: inline-block"><table id="dayValuesTab"></table></div>
+
+
+
+<script type="text/javascript">
+//var. globale, contiene il giorno visualizzato sempre
+    var dayShown="";
+    var myChart="";
+    
+    window.addEventListener('DOMContentLoaded', (event) => {
+        fetchRecords(0);
+    });
+
+
+    function fetchRecords(increment)
+    {
+    	
+    	//innanzitutto calcola la data richiesta
+        //visualizzo bottoni per scorrere tra i giorni
+        document.getElementById("prev").style.display="inline";
+        document.getElementById("next").style.display="inline";
+        var newDay;
+        if(increment===2) //il giorno è fornito tramite casella di testo
+        {
+            newDay=new Date(document.getElementById("newDay").value);
+            dayShown=newDay;
+        }
+        else {
+            //incremento o decremento il giorno desiderato
+            //se non è stato scelto nessun giorno, scelgo oggi
+            if(dayShown==="")
+            {
+                dayShown=new Date();
+            }
+            //per ottenere oggetto data invece che una stringa
+            dayShown=new Date(dayShown);
+            
+            //incremento mese
+            dayShown.setMonth(dayShown.getMonth()+increment);
+            newDay = dayShown;
+        }
+
+        //aggiunge uno zero prima del mese se necessario, per compatibilità con il database
+        var month;
+        if(newDay.getMonth()+1<10)
+        {
+            month="0"+(newDay.getMonth()+1);
+        }
+        else
+        {
+            month=(newDay.getMonth()+1);
+        }
+        
+        var requestedDate=encodeURIComponent(newDay.getFullYear()+"-"+month);
+        var xmlhttp;
+        if (window.XMLHttpRequest) {
+            xmlhttp = new XMLHttpRequest();
+        }
+        else {
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function()
+        {
+            if(xmlhttp.readyState == 4 && xmlhttp.status == 200)
+            {
+                var table = document.getElementById("dayValuesTab");
+                table.innerHTML="<th>Giorno</th> <th>Media</th> <th>Massima</th> <th>Ora Massima</th> <th>Minima</th> <th>Ora Minima</th>";
+                document.getElementById("oldDataDay").innerText=requestedDate;
+                document.getElementById("oldDataDay").style.display="inline";
+                
+                //nessun dato per mese selezionato
+                if(xmlhttp.responseText==0)
+                	{
+                		document.getElementById("monthStats").style.display="none";
+                		document.getElementById("chartDiv").style.display="none";
+                		document.getElementById("tableDiv").style.display="none";
+                		myChart.destroy();
+                		return;
+                	}
+                else
+                	{
+                		//altrimenti rendo tutto visibile
+                	document.getElementById("monthStats").style.display="inline";
+            		document.getElementById("chartDiv").style.display="inline-block";
+            		document.getElementById("tableDiv").style.display="inline-block";
+                	}
+                
+                var data=JSON.parse(xmlhttp.responseText);
+                
+                var dataList=data.day_summaries;
+                let avg=data.average;
+                let absMax=data.max;
+                let absMin=data.min;
+                let timeAbsMax=data.time_max;
+                let timeAbsMin=data.time_min;
+                
+                //stampo medie mensili
+                document.getElementById("monthStats").innerHTML="Massima mensile: <b>"+absMax+"</b> °C il "+timeAbsMax+"<br>";
+                document.getElementById("monthStats").innerHTML+="Minima mensile: <b>"+absMin+"</b> °C il "+timeAbsMin+"<br>";
+                document.getElementById("monthStats").innerHTML+="Media mensile: <b>"+avg.toFixed(1)+"</b> °C<br>";
+		document.getElementById("monthStats").innerHTML+="Media massime: <b>"+data.average_max+"</b> °C<br>";
+		document.getElementById("monthStats").innerHTML+="Media minime: <b>"+data.average_min+"</b> °C";
+                //salvo valori per il grafico
+                var labels = [];
+                var values = [];
+                //creo tabella giorni. Ogni elemento dell'array rappresenta le statistiche di un determinato giorno
+                for(var i=0; i<dataList.length; i++)
+                {
+                    let day=dataList[i].day;
+                    let avg=dataList[i].average;
+                    values[i]=avg;
+                    labels[i]=day;
+                    let max=dataList[i].max;
+                    let min=dataList[i].min;
+                    let hourMax=dataList[i].time_max;
+                    let hourMin=dataList[i].time_min;
+                    let row=document.createElement("tr");
+                    row.innerHTML="<td>"+day+"</td> <td>"+avg.toFixed(1)+" °C</td> <td>"+max+" °C</td> <td>"+hourMax+"</td> <td>"+min+" °C</td> <td>"+hourMin+"</td>";
+                    table.appendChild(row);
+                }
+                
+              	//render grafico
+                //prima elimino grafico precedente se presente
+               	const dataChart = {
+               		  labels: labels,
+               		  datasets: [{
+               		    label: 'Temperatura media',
+               		    backgroundColor: 'rgb(255, 99, 132)',
+               		    borderColor: 'rgb(255, 99, 132)',
+               		    data: values,
+               		  }]
+               		};
+               	const config = {
+                 		  type: 'line',
+                 		  data: dataChart,
+                 		  options: {}
+                 		};
+               	//se esiste, elimino grafico precedente
+               	if(myChart!="")
+               		myChart.destroy();
+               	
+               	myChart = new Chart(
+               		    document.getElementById('myChart'),
+               		    config
+               		  );
+            }
+        }
+
+        xmlhttp.open("GET", "/api/temperatures/statistics?month="+requestedDate);
+        xmlhttp.send();
+    }
+</script>
+</body>
+</html>
