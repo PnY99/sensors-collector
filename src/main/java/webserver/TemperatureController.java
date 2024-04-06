@@ -6,6 +6,7 @@ import dto.TemperatureDTO;
 import dto.TemperatureDaySummaryDTO;
 import dto.TemperatureMonthSummaryDTO;
 import storage.Database;
+import utils.Configuration;
 import utils.DateUtils;
 
 import java.io.IOException;
@@ -22,7 +23,14 @@ public class TemperatureController {
         List<TemperatureDTO> readings = Database.getDailyTemperatures(day);
 
         String json = gson.toJson(readings);
-        return new HttpResponse(200, json.getBytes());
+
+        long cacheTimeout;
+        if(day.equals(DateUtils.today())) {
+            cacheTimeout = Configuration.getInt("temperature.interval")/2;
+        } else {
+            cacheTimeout = 2678400;
+        }
+        return new HttpResponse(200, json.getBytes(), true, cacheTimeout);
     }
 
     static HttpResponse getMonthStatistics(HttpExchange httpExchange) {
@@ -30,16 +38,26 @@ public class TemperatureController {
         String month = queryParameters.get("month");
         String day = queryParameters.get("day");
 
+        long cacheTimeout = 2678400;
+
         if(month != null) {
             TemperatureMonthSummaryDTO data = Database.getMonthStatistics(month);
             String json = gson.toJson(data);
-            return new HttpResponse(200, json.getBytes());
+
+            if(month.equals(DateUtils.currentMonth())) {
+                cacheTimeout = 1800;
+            }
+            return new HttpResponse(200, json.getBytes(), true, cacheTimeout);
         } else if(day != null) {
             TemperatureDaySummaryDTO data = Database.getDailySummary(day);
             String json = gson.toJson(data);
-            return new HttpResponse(200, json.getBytes());
+
+            if(day.equals(DateUtils.currentMonth())) {
+                cacheTimeout = 1800;
+            }
+            return new HttpResponse(200, json.getBytes(), true, cacheTimeout);
         } else {
-            return new HttpResponse(400, new byte[0]);
+            return new HttpResponse(400, new byte[0], true, cacheTimeout);
         }
     }
 }

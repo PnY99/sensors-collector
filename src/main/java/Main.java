@@ -9,7 +9,11 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) throws IOException, PropertyNotFoundException, InterruptedException {
-        Configuration.load(args[0]);
+        if(args.length == 0) {
+            Configuration.load("application.properties");
+        } else {
+            Configuration.load(args[0]);
+        }
         Database.init();
 
         boolean webserver = Configuration.getBoolean("webserver.running");

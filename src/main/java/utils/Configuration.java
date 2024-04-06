@@ -20,27 +20,15 @@ public class Configuration {
         return properties.getProperty("debug").equals("true");
     }
 
-    public static int getInt(String property) throws PropertyNotFoundException {
-        if(!properties.containsKey(property)) {
-            throw new PropertyNotFoundException("Property "+property+" not defined");
-        }
-
+    public static int getInt(String property) {
         return Integer.parseInt(properties.getProperty(property));
     }
 
-    public static String getString(String property) throws PropertyNotFoundException {
-        if(!properties.containsKey(property)) {
-            throw new PropertyNotFoundException("Property "+property+" not defined");
-        }
-
+    public static String getString(String property) {
         return properties.getProperty(property);
     }
 
-    public static boolean getBoolean(String property) throws PropertyNotFoundException {
-        if(!properties.containsKey(property)) {
-            throw new PropertyNotFoundException("Property "+property+" not defined");
-        }
-
+    public static boolean getBoolean(String property) {
         return Boolean.parseBoolean(properties.getProperty(property));
     }
 }

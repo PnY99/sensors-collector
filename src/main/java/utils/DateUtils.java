@@ -14,4 +14,9 @@ public class DateUtils {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         return LocalDateTime.now().format(formatter);
     }
+
+    public static String currentMonth() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+        return LocalDateTime.now().format(formatter);
+    }
 }
