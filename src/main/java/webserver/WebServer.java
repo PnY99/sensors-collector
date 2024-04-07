@@ -9,15 +9,23 @@ import utils.HashedCache;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
 
 public class WebServer {
     private static String html_dir;
     private static HashedCache<String, HttpResponse> cache;
-    public static void start(int port) throws IOException, PropertyNotFoundException {
+    private static HashMap<String, File> staticPages;
+    public static void start(int port) throws IOException {
+        html_dir = Configuration.getString("webserver.htmlDirectory");
         cache = new HashedCache<>(200);
+        staticPages = new HashMap<>();
+        indexStaticContent(Path.of(html_dir));
+
+
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(port), 0);
         httpServer.setExecutor(null);
-        html_dir = Configuration.getString("webserver.htmlDirectory");
 
         httpServer.createContext("/api/temperatures", httpExchange -> {
             dispatchCachedRequest(httpExchange, TemperatureController::getDailyTemperatures);
@@ -40,13 +48,18 @@ public class WebServer {
 
     private static HttpResponse index(HttpExchange httpExchange) throws IOException {
         try {
-            InputStream inputStream;
+            File requestedPage;
             if (httpExchange.getRequestURI().toString().equals("/")) {
-                inputStream = new FileInputStream(html_dir+"/index.html");
+                requestedPage = staticPages.get("/index.html");
             } else {
-                inputStream = new FileInputStream(html_dir+httpExchange.getRequestURI().toString());
+                requestedPage = staticPages.get(httpExchange.getRequestURI().toString());
             }
 
+            if(requestedPage == null) {
+                throw new FileNotFoundException();
+            }
+
+            InputStream inputStream = new FileInputStream(requestedPage);
             byte[] indexFile = inputStream.readAllBytes();
             inputStream.close();
 
@@ -54,6 +67,15 @@ public class WebServer {
         } catch (FileNotFoundException e) {
             return new HttpResponse(404, new byte[0], true, 2678400);
         }
+    }
+
+    private static void indexStaticContent(Path root) throws IOException {
+        Files.walk(root).forEach(file -> {
+            if(Files.isRegularFile(file)) {
+                String name = file.toString().replace(html_dir, "");
+                staticPages.put(name, file.toFile());
+            }
+        });
     }
 
     private static void dispatchCachedRequest(HttpExchange httpExchange, FunctionWIthException<HttpExchange, HttpResponse, Exception> handler) {

@@ -26,7 +26,7 @@ public class TemperatureController {
 
         long cacheTimeout;
         if(day.equals(DateUtils.today())) {
-            cacheTimeout = Configuration.getInt("temperature.interval")/2;
+            cacheTimeout = 60;
         } else {
             cacheTimeout = 2678400;
         }

@@ -23,7 +23,7 @@ public class SolarController {
 
         long cacheTimeout = 2678400;
         if(day.equals(DateUtils.today())) {
-            cacheTimeout = Configuration.getInt("solar.interval")/2;
+            cacheTimeout = 60;
         }
         return new HttpResponse(200, json.getBytes(), true, cacheTimeout);
     }
