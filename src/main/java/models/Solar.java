@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 
 public class Solar {
     private float energy = 0, iac = 0, vac = 0, idc = 0, vdc = 0, power = 0;
-    private boolean available;
     private LocalDateTime date = LocalDateTime.now();
     private int inverterID;
 
@@ -65,11 +64,7 @@ public class Solar {
     }
 
     public boolean isAvailable() {
-        return available;
-    }
-
-    public void setAvailable(boolean available) {
-        this.available = available;
+        return !(iac == 0 && idc == 0 && vac == 0 && vdc == 0 && power == 0 && energy == 0);
     }
 
     public LocalDateTime getDate() {
@@ -85,7 +80,6 @@ public class Solar {
     }
 
     public static Solar read(int inverterID) throws IOException, PropertyNotFoundException {
-        boolean streamAvailable = false;
         Solar s = new Solar();
 
         s.setInverterID(inverterID);
@@ -103,14 +97,6 @@ public class Solar {
         //parsing
         while((line=reader.readLine())!=null)
         {
-            streamAvailable = true;
-            //inverter spento, o errore connessione
-            if(line.contains("CRITICAL"))
-            {
-                s.setAvailable(false);
-                return s;
-            }
-
             line = ParsingUtils.replaceDuplicateSpaces(line);
             fields=line.split("[\\s\n\t]");
 
@@ -142,9 +128,6 @@ public class Solar {
                     s.setPower(ParsingUtils.parseFloat(fields[i+1]));
                 }
             }
-        }
-        if(streamAvailable) {
-            s.setAvailable(true);
         }
         reader.close();
         return s;
