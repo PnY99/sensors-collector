@@ -6,8 +6,12 @@ import utils.Configuration;
 import webserver.WebServer;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
+    private static final ScheduledExecutorService scheduledExecutors = Executors.newScheduledThreadPool(2);
     public static void main(String[] args) throws IOException, PropertyNotFoundException, InterruptedException {
         if(args.length == 0) {
             Configuration.load("application.properties");
@@ -24,29 +28,13 @@ public class Main {
         }
 
         if(sensorsReader) {
-            TemperatureJob temperatureJob = new TemperatureJob(Configuration.getString("temperature.sensorId"), Configuration.getInt("temperature.interval"));
-            SolarJob solarJob = new SolarJob(Configuration.getInt("solar.inverterId"), Configuration.getInt("solar.interval"));
+            int temperatureInterval = Configuration.getInt("temperature.interval");
+            int solarInterval = Configuration.getInt("solar.interval");
+            TemperatureJob temperatureJob = new TemperatureJob(Configuration.getString("temperature.sensorId"));
+            SolarJob solarJob = new SolarJob(Configuration.getInt("solar.inverterId"));
 
-            Thread temperatureThread = new Thread(temperatureJob);
-            Thread solarThread = new Thread(solarJob);
-
-            temperatureThread.start();
-            solarThread.start();
-
-            while (true) {
-                if (!temperatureThread.isAlive()) {
-                    System.out.println("Restarting temperature thread");
-                    temperatureThread = new Thread(temperatureJob);
-                    temperatureThread.start();
-                }
-
-                if (!solarThread.isAlive()) {
-                    System.out.println("Restarting solar thread");
-                    solarThread = new Thread(solarJob);
-                    solarThread.start();
-                }
-                Thread.sleep(10000L);
-            }
+            scheduledExecutors.scheduleAtFixedRate(temperatureJob, 0, temperatureInterval, TimeUnit.SECONDS);
+            scheduledExecutors.scheduleAtFixedRate(solarJob, 0, solarInterval, TimeUnit.SECONDS);
         }
     }
 }

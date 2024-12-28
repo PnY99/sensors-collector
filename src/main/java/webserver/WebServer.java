@@ -2,7 +2,6 @@ package webserver;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import exceptions.PropertyNotFoundException;
 import utils.Configuration;
 import utils.FunctionWIthException;
 import utils.HashedCache;
@@ -28,15 +27,15 @@ public class WebServer {
         httpServer.setExecutor(null);
 
         httpServer.createContext("/api/temperatures", httpExchange -> {
-            dispatchCachedRequest(httpExchange, TemperatureController::getDailyTemperatures);
+            dispatchCachedRequest(httpExchange, TemperatureService::getDailyTemperatures);
         });
 
         httpServer.createContext("/api/temperatures/statistics", httpExchange -> {
-            dispatchCachedRequest(httpExchange, TemperatureController::getMonthStatistics);
+            dispatchCachedRequest(httpExchange, TemperatureService::getMonthStatistics);
         });
 
         httpServer.createContext("/api/solar", httpExchange -> {
-            dispatchCachedRequest(httpExchange, SolarController::getDailySolars);
+            dispatchCachedRequest(httpExchange, SolarService::getDailySolars);
         });
 
         httpServer.createContext("/", httpExchange -> {

@@ -6,15 +6,12 @@ import dto.TemperatureDTO;
 import dto.TemperatureDaySummaryDTO;
 import dto.TemperatureMonthSummaryDTO;
 import storage.Database;
-import utils.Configuration;
 import utils.DateUtils;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 
-public class TemperatureController {
+public class TemperatureService {
     private static final Gson gson = new Gson();
     static HttpResponse getDailyTemperatures(HttpExchange httpExchange) {
         HashMap<String, String> queryParameters = WebUtils.parseQueryParameters(httpExchange.getRequestURI().toString());
@@ -38,7 +35,7 @@ public class TemperatureController {
         String month = queryParameters.get("month");
         String day = queryParameters.get("day");
 
-        long cacheTimeout = 2678400;
+        long cacheTimeout = 86400;
 
         if(month != null) {
             TemperatureMonthSummaryDTO data = Database.getMonthStatistics(month);

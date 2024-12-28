@@ -9,7 +9,7 @@ public class ParsingUtils {
         for(int i=0; i<value.length(); i++)
         {
             c=value.charAt(i);
-            if(Character.isDigit(c) || c=='.')
+            if(Character.isDigit(c) || c=='.' || c == '-')
             {
                 res.append(c);
             }

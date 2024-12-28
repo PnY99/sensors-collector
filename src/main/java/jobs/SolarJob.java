@@ -7,26 +7,22 @@ import storage.Database;
 import java.io.IOException;
 
 public class SolarJob implements Runnable{
-    private int inverterId, runInterval;
-    public SolarJob(int inverterId, int runInterval) {
+    private int inverterId;
+    public SolarJob(int inverterId) {
         this.inverterId = inverterId;
-        this.runInterval = runInterval;
     }
     @Override
     public void run() {
         try {
-            while(true) {
-                Solar s = Solar.read(inverterId);
-                if(s.isAvailable()) {
-                    Database.save(s);
-                    System.out.println("Saved "+s);
-                } else {
-                    System.err.println("Solar reading failed");
-                }
-                Thread.sleep(runInterval* 1000L);
+            Solar s = Solar.read(inverterId);
+            if (s.isAvailable()) {
+                Database.save(s);
+                System.out.println("Saved " + s);
+            } else {
+                System.err.println("Solar reading unavailable");
             }
-        } catch (IOException | InterruptedException | PropertyNotFoundException e) {
-            throw new RuntimeException(e);
+        } catch (IOException | PropertyNotFoundException e) {
+            System.err.println("Solar reading failed: "+e.getMessage());
         }
     }
 }
