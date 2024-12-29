@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class HashedCache<K, V> extends LinkedHashMap<K, CacheEntry<V>> {
-    private int maxSize;
+    private final int maxSize;
 
     @Override
     protected boolean removeEldestEntry(Map.Entry entry) {

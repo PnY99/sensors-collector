@@ -3,7 +3,7 @@ package webserver;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import utils.Configuration;
-import utils.FunctionWIthException;
+import utils.FunctionWithException;
 import utils.HashedCache;
 
 import java.io.*;
@@ -77,7 +77,7 @@ public class WebServer {
         });
     }
 
-    private static void dispatchCachedRequest(HttpExchange httpExchange, FunctionWIthException<HttpExchange, HttpResponse, Exception> handler) {
+    private static void dispatchCachedRequest(HttpExchange httpExchange, FunctionWithException<HttpExchange, HttpResponse, Exception> handler) {
         try {
             String uri = httpExchange.getRequestURI().toString();
 

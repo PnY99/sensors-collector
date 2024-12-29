@@ -21,7 +21,7 @@ public class TemperatureJob implements Runnable{
             } else {
                 System.err.println("Temperature reading unavailable");
             }
-        } catch (IOException | PropertyNotFoundException e) {
+        } catch (Exception e) {
             System.err.println("Temperature reading failed: "+e.getMessage());
         }
     }

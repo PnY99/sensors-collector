@@ -21,7 +21,7 @@ public class SolarJob implements Runnable{
             } else {
                 System.err.println("Solar reading unavailable");
             }
-        } catch (IOException | PropertyNotFoundException e) {
+        } catch (Exception e) {
             System.err.println("Solar reading failed: "+e.getMessage());
         }
     }
