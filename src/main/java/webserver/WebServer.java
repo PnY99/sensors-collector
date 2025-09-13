@@ -71,7 +71,7 @@ public class WebServer {
     private static void indexStaticContent(Path root) throws IOException {
         Files.walk(root).forEach(file -> {
             if(Files.isRegularFile(file)) {
-                String name = file.toString().replace(html_dir, "");
+                String name = file.toString().replaceFirst(html_dir, "");
                 staticPages.put(name, file.toFile());
             }
         });
